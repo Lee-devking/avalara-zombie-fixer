@@ -1,0 +1,66 @@
+<!doctype html>
+ui.opts.appendChild(div);
+});
+}
+
+
+async function fetchLiveQuestion() {
+if (!CONFIG.API_URL) return null;
+try {
+const res = await fetch(CONFIG.API_URL, {
+method: 'POST',
+headers: {
+'Content-Type': 'application/json',
+...(CONFIG.API_TOKEN ? { 'Authorization': `Bearer ${CONFIG.API_TOKEN}` } : {})
+},
+body: JSON.stringify({ mode: 'question' })
+});
+if (!res.ok) throw new Error('API error');
+const data = await res.json();
+// expected: { prompt, options:[..], correct:Number, doc }
+return data;
+} catch (e) {
+console.warn('Live API failed, falling back to training', e);
+return null;
+}
+}
+
+
+async function nextWave() {
+state.wave += 1; ui.wave.textContent = state.wave;
+let q = null;
+if (CONFIG.MODE === 'live') q = await fetchLiveQuestion();
+if (!q) q = TRAINING_SET[Math.floor(Math.random()*TRAINING_SET.length)];
+setQuestion(q);
+// allow answering
+state.playing = true;
+}
+
+
+function gameOver() {
+state.playing = false;
+ui.q.textContent = `Game over. Final score: ${state.score}. Click Start to try again.`;
+ui.opts.innerHTML = '';
+}
+
+
+function start() {
+state.playing = true; state.score = 0; state.lives = 3; state.wave = 0;
+ui.score.textContent = '0'; ui.lives.textContent = '3'; ui.wave.textContent = '0';
+nextWave();
+}
+
+
+document.getElementById('startBtn').onclick = start;
+document.getElementById('resetBtn').onclick = () => {
+state.playing = false; state.score = 0; ui.score.textContent = '0';
+ui.q.textContent = 'Press **Start** to begin.'; ui.opts.innerHTML = '';
+renderBackground();
+};
+
+
+// Initial render
+renderBackground();
+</script>
+</body>
+</html>
