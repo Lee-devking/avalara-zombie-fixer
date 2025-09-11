@@ -1,0 +1,155 @@
+<!doctype html>
+});
+}
+
+
+function setQuestion(q) {
+state.currentQuestion = q;
+ui.q.textContent = q.prompt;
+ui.doc.textContent = q.doc ? 'Open reference' : '—';
+if (q.doc) ui.doc.href = q.doc; else ui.doc.removeAttribute('href');
+
+
+ui.opts.innerHTML = '';
+q.options.forEach((o, i) => {
+const div = document.createElement('div');
+div.className = 'opt';
+div.textContent = o;
+div.onclick = () => {
+if (!state.playing) return;
+if (i === q.correct) {
+state.score += 10; ui.score.textContent = state.score;
+markOption(i, true);
+setTimeout(nextWave, 600);
+} else {
+state.lives -= 1; ui.lives.textContent = state.lives;
+markOption(i, false);
+if (state.lives <= 0) gameOver();
+}
+};
+ui.opts.appendChild(div);
+});
+spawnZombies(q);
+}
+
+
+async function fetchLiveQuestion() {
+if (!CONFIG.API_URL) return null;
+try {
+const res = await fetch(CONFIG.API_URL, {
+method: 'POST',
+headers: {
+'Content-Type': 'application/json',
+...(CONFIG.API_TOKEN ? { 'Authorization': `Bearer ${CONFIG.API_TOKEN}` } : {})
+},
+body: JSON.stringify({ mode: 'question' })
+});
+if (!res.ok) throw new Error('API error');
+const data = await res.json();
+// expected shape: { prompt, options:[..], correct:0, doc }
+return data;
+} catch (e) {
+console.warn('Live API failed, falling back to training', e);
+return null;
+}
+}
+
+
+async function nextWave() {
+state.wave += 1; ui.wave.textContent = state.wave;
+let q = null;
+if (CONFIG.MODE === 'live') q = await fetchLiveQuestion();
+if (!q) q = TRAINING_SET[Math.floor(Math.random()*TRAINING_SET.length)];
+setQuestion(q);
+}
+
+
+function gameOver() {
+state.playing = false;
+ui.q.textContent = `Game over. Final score: ${state.score}. Click Start to try again.`;
+}
+
+
+function start() {
+state.playing = true; state.score = 0; state.lives = 3; state.wave = 1;
+ui.score.textContent = '0'; ui.lives.textContent = '3'; ui.wave.textContent = '1';
+const q = CONFIG.MODE === 'training' ? TRAINING_SET[0] : (TRAINING_SET[0]);
+setQuestion(q);
+update();
+}
+
+
+document.getElementById('startBtn').onclick = start;
+document.getElementById('resetBtn').onclick = () => { state.playing = false; state.score=0; ui.score.textContent='0'; ui.q.textContent='Press **Start** to begin.'; renderBackground(); };
+
+
+// initial render
+renderBackground();
+</script>
+</body>
+</html># spark_endpoint.py
+# Minimal handler for Databricks Model Serving (Function) or generic FastAPI
+# Expected request: {"mode":"question"} or {"mode":"validate", "prompt":..., "answer":...}
+# Response for question: {"prompt": str, "options": [str, str, str, str], "correct": int, "doc": str}
+
+
+import os, random
+
+
+# Placeholder: wire to your knowledge bot here
+# For example, call Avi/Hawk-bot/ChatGPT with a retrieval-augmented prompt built from Avalara docs.
+# def ask_bot(prompt: str) -> str:
+# ... return concise answer string
+
+
+# For prototype, use a small static bank (same as front-end) and shuffle
+BANK = [
+{
+"prompt": "You receive AvaTax REST error 2: AccountInvalidException. What is the first check?",
+"correct_text": "Verify you are using the correct Account ID for the environment (Sandbox vs Production).",
+"distractors": [
+"Reboot the AvaTax server.",
+"Change the company code to ANY.",
+"Disable address validation."
+],
+"doc": "https://developer.avalara.com/avatax/errors/"
+},
+]
+
+
+# If you’re deploying on Databricks Function Serving, expose a 'predict' function
+# which takes a dict and returns a dict.
+
+
+def predict(request: dict) -> dict:
+mode = request.get("mode", "question")
+if mode == "question":
+q = random.choice(BANK)
+options = [q["correct_text"], *q["distractors"]]
+random.shuffle(options)
+correct_idx = options.index(q["correct_text"])
+return {
+"prompt": q["prompt"],
+"options": options,
+"correct": correct_idx,
+"doc": q["doc"],
+}
+elif mode == "validate":
+# naive validation: exact match (replace with bot call if needed)
+prompt = request.get("prompt", "")
+answer = request.get("answer", "")
+for q in BANK:
+if q["prompt"] == prompt:
+ok = (answer.strip() == q["correct_text"])
+return {"ok": ok}
+return {"ok": False}
+else:
+return {"error": "unknown mode"}
+
+
+# If hosting with FastAPI instead of Databricks Serving:
+# from fastapi import FastAPI
+# app = FastAPI()
+# @app.post("/")
+# async def root(req: dict):
+# return predict(req)
