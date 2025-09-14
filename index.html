@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avalara Zombie Fixer - Survival Quiz Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a1a, #2d4a22);
+            color: #00ff00;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        h1 {
+            color: #ff0000;
+            text-shadow: 2px 2px 4px #000;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            animation: flicker 2s infinite alternate;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        .subtitle {
+            color: #ffaa00;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border: 2px solid #00ff00;
+            border-radius: 5px;
+        }
+
+        .stat label {
+            color: #ffaa00;
+            font-weight: bold;
+        }
+
+        .stat span {
+            color: #00ff00;
+            font-size: 1.5em;
+            margin-left: 10px;
+        }
+
+        .question-area {
+            background: rgba(0, 0, 0, 0.8);
+            border: 3px solid #ff0000;
+            border-radius: 10px;
+            padding: 30px;
+            margin: 30px 0;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .question {
+            font-size: 1.3em;
+            line-height: 1.6;
+            color: #ffffff;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .option {
+            background: rgba(0, 100, 0, 0.3);
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1em;
+        }
+
+        .option:hover {
+            background: rgba(0, 150, 0, 0.5);
+            transform: scale(1.05);
+            box-shadow: 0 0 15px #00ff00;
+        }
+
+        .option.correct {
+            background: rgba(0, 200, 0, 0.7);
+            border-color: #00ff00;
+            animation: pulse 0.5s;
+        }
+
+        .option.incorrect {
+            background: rgba(200, 0, 0, 0.7);
+            border-color: #ff0000;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .controls {
+            margin: 30px 0;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff4444, #aa0000);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            font-family: inherit;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            background: linear-gradient(45deg, #ff6666, #cc0000);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 0, 0, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .zombie-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.1;
+        }
+
+        .zombie {
+            position: absolute;
+            font-size: 2em;
+            color: #ff0000;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        .mode-selector {
+            margin: 20px 0;
+        }
+
+        .mode-selector label {
+            color: #ffaa00;
+            margin: 0 15px;
+            cursor: pointer;
+        }
+
+        .mode-selector input[type="radio"] {
+            margin-right: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .stats {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .options {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="zombie-bg" id="zombieBg"></div>
+    
+    <div class="container">
+        <h1>🧟 AVALARA ZOMBIE FIXER 🧟</h1>
+        <p class="subtitle">Survive the undead with your tax knowledge!</p>
+        
+        <div class="stats">
+            <div class="stat">
+                <label>Score:</label>
+                <span id="score">0</span>
+            </div>
+            <div class="stat">
+                <label>Lives:</label>
+                <span id="lives">3</span>
+            </div>
+            <div class="stat">
+                <label>Wave:</label>
+                <span id="wave">0</span>
+            </div>
+        </div>
+
+        <div class="mode-selector">
+            <label>
+                <input type="radio" name="gameMode" value="training" checked>
+                Training Mode
+            </label>
+            <label>
+                <input type="radio" name="gameMode" value="live">
+                Live Mode (API)
+            </label>
+        </div>
+        
+        <div class="question-area">
+            <div class="question" id="question">Press <strong>Start</strong> to begin your zombie survival training!</div>
+        </div>
+        
+        <div class="options" id="options"></div>
+        
+        <div class="controls">
+            <button class="btn" id="startBtn">🎮 Start Game</button>
+            <button class="btn" id="resetBtn">🔄 Reset</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            MODE: 'training', // 'training' or 'live'
+            API_URL: null, // Set this to your API endpoint
+            API_TOKEN: null // Set this if your API requires authentication
+        };
+
+        // Training question set
+        const TRAINING_SET = [
+            {
+                prompt: "A zombie corporation has been dormant for 2 years. What's the first step to revive it?",
+                options: [
+                    "File dissolution papers",
+                    "Check state compliance status",
+                    "Hire new employees",
+                    "Change business address"
+                ],
+                correct: 1,
+                doc: "Always check compliance status first when reviving a dormant corporation."
+            },
+            {
+                prompt: "What happens to sales tax obligations when a zombie business reactivates?",
+                options: [
+                    "All previous obligations are forgiven",
+                    "Only current period obligations apply",
+                    "All past due amounts plus penalties are due",
+                    "Tax obligations reset to zero"
+                ],
+                correct: 2,
+                doc: "Zombie businesses must settle all past due tax obligations plus applicable penalties."
+            },
+            {
+                prompt: "Which document is most critical for reviving a zombie LLC?",
+                options: [
+                    "Articles of Organization",
+                    "Certificate of Good Standing",
+                    "Operating Agreement",
+                    "Tax ID Number"
+                ],
+                correct: 1,
+                doc: "Certificate of Good Standing shows current compliance status and is essential for revival."
+            },
+            {
+                prompt: "A zombie business owes $10,000 in back taxes. What's the best first action?",
+                options: [
+                    "Ignore it and hope it goes away",
+                    "Contact the tax authority to arrange payment",
+                    "File for bankruptcy immediately",
+                    "Transfer assets to a new entity"
+                ],
+                correct: 1,
+                doc: "Proactive communication with tax authorities often leads to manageable payment plans."
+            },
+            {
+                prompt: "How long can a business typically remain dormant before automatic dissolution?",
+                options: [
+                    "6 months",
+                    "1 year",
+                    "2-3 years (varies by state)",
+                    "10 years"
+                ],
+                correct: 2,
+                doc: "Most states allow 2-3 years of dormancy before automatic dissolution proceedings begin."
+            },
+            {
+                prompt: "What's required to maintain a zombie corporation's legal status?",
+                options: [
+                    "Monthly board meetings",
+                    "Annual report filings",
+                    "Quarterly tax payments",
+                    "Weekly status updates"
+                ],
+                correct: 1,
+                doc: "Annual reports are typically the minimum requirement to maintain legal entity status."
+            }
+        ];
+
+        // Game state
+        const state = {
+            playing: false,
+            score: 0,
+            lives: 3,
+            wave: 0,
+            currentQuestion: null
+        };
+
+        // UI elements
+        const ui = {
+            score: document.getElementById('score'),
+            lives: document.getElementById('lives'),
+            wave: document.getElementById('wave'),
+            q: document.getElementById('question'),
+            opts: document.getElementById('options')
+        };
+
+        // Mode selector handling
+        document.querySelectorAll('input[name="gameMode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                CONFIG.MODE = e.target.value;
+                console.log('Game mode changed to:', CONFIG.MODE);
+            });
+        });
+
+        function setQuestion(questionData) {
+            state.currentQuestion = questionData;
+            ui.q.textContent = questionData.prompt;
+            ui.opts.innerHTML = '';
+            
+            questionData.options.forEach((option, index) => {
+                const div = document.createElement('div');
+                div.className = 'option';
+                div.textContent = option;
+                div.onclick = () => answerQuestion(index);
+                ui.opts.appendChild(div);
+            });
+        }
+
+        function answerQuestion(selectedIndex) {
+            if (!state.playing) return;
+            
+            const correct = state.currentQuestion.correct;
+            const options = ui.opts.children;
+            
+            // Disable further clicking
+            state.playing = false;
+            
+            // Show correct/incorrect
+            for (let i = 0; i < options.length; i++) {
+                options[i].onclick = null;
+                if (i === correct) {
+                    options[i].classList.add('correct');
+                } else if (i === selectedIndex && i !== correct) {
+                    options[i].classList.add('incorrect');
+                }
+            }
+            
+            if (selectedIndex === correct) {
+                state.score += 10;
+                ui.score.textContent = state.score;
+                setTimeout(nextWave, 1500);
+            } else {
+                state.lives -= 1;
+                ui.lives.textContent = state.lives;
+                if (state.lives <= 0) {
+                    setTimeout(gameOver, 1500);
+                } else {
+                    setTimeout(nextWave, 2000);
+                }
+            }
+        }
+
+        async function fetchLiveQuestion() {
+            if (!CONFIG.API_URL) return null;
+            try {
+                const res = await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(CONFIG.API_TOKEN ? { 'Authorization': `Bearer ${CONFIG.API_TOKEN}` } : {})
+                    },
+                    body: JSON.stringify({ mode: 'question' })
+                });
+                if (!res.ok) throw new Error('API error');
+                const data = await res.json();
+                // expected: { prompt, options:[..], correct:Number, doc }
+                return data;
+            } catch (e) {
+                console.warn('Live API failed, falling back to training', e);
+                return null;
+            }
+        }
+
+        async function nextWave() {
+            state.wave += 1; 
+            ui.wave.textContent = state.wave;
+            let q = null;
+            if (CONFIG.MODE === 'live') q = await fetchLiveQuestion();
+            if (!q) q = TRAINING_SET[Math.floor(Math.random() * TRAINING_SET.length)];
+            setQuestion(q);
+            // allow answering
+            state.playing = true;
+        }
+
+        function gameOver() {
+            state.playing = false;
+            ui.q.textContent = `💀 Game Over! 💀 Final score: ${state.score}. The zombies got you! Click Start to try again.`;
+            ui.opts.innerHTML = '';
+        }
+
+        function start() {
+            state.playing = true; 
+            state.score = 0; 
+            state.lives = 3; 
+            state.wave = 0;
+            ui.score.textContent = '0'; 
+            ui.lives.textContent = '3'; 
+            ui.wave.textContent = '0';
+            nextWave();
+        }
+
+        function renderBackground() {
+            const bg = document.getElementById('zombieBg');
+            bg.innerHTML = '';
+            
+            // Add some floating zombie emojis for atmosphere
+            const zombieEmojis = ['🧟', '🧟‍♂️', '🧟‍♀️', '💀', '🎃'];
+            
+            for (let i = 0; i < 8; i++) {
+                const zombie = document.createElement('div');
+                zombie.className = 'zombie';
+                zombie.textContent = zombieEmojis[Math.floor(Math.random() * zombieEmojis.length)];
+                zombie.style.left = Math.random() * 100 + '%';
+                zombie.style.top = Math.random() * 100 + '%';
+                zombie.style.animationDelay = Math.random() * 6 + 's';
+                bg.appendChild(zombie);
+            }
+        }
+
+        // Event handlers
+        document.getElementById('startBtn').onclick = start;
+        document.getElementById('resetBtn').onclick = () => {
+            state.playing = false; 
+            state.score = 0; 
+            ui.score.textContent = '0';
+            ui.q.textContent = 'Press Start to begin your zombie survival training!'; 
+            ui.opts.innerHTML = '';
+            renderBackground();
+        };
+
+        // Initial render
+        renderBackground();
+    </script>
+</body>
+</html>
