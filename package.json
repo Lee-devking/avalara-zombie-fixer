@@ -1,0 +1,19 @@
+{
+  "name": "avalara-zombie-fixer",
+  "version": "1.0.0",
+  "description": "Zombie-themed tax compliance quiz game",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "dev": "python3 -m http.server 8000",
+    "serve": "python3 -m http.server 8000"
+  },
+  "keywords": ["game", "quiz", "tax", "compliance", "zombie", "education"],
+  "author": "Avalara",
+  "license": "MIT",
+  "homepage": ".",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Lee-devking/avalara-zombie-fixer.git"
+  }
+}
